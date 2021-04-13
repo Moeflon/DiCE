@@ -89,7 +89,7 @@ class DicePyTorch(ExplainerBase):
             #         "permitted range of features should be within their original range")
             # else:
             self.data_interface.permitted_range = permitted_range
-            self.minx, self.maxx = self.data_interface.get_minx_maxx(normalized=True)
+            self.minx, self.maxx = self.data_interface.get_minx_maxx(normalized=self.data_interface.normalize)
             self.cont_minx = []
             self.cont_maxx = []
             for feature in self.data_interface.continuous_feature_names:
@@ -168,7 +168,7 @@ class DicePyTorch(ExplainerBase):
         if feature_weights != self.feature_weights_input:
             self.feature_weights_input = feature_weights
             if feature_weights == "inverse_mad":
-                normalized_mads = self.data_interface.get_valid_mads(normalized=True)
+                normalized_mads = self.data_interface.get_valid_mads(normalized=self.data_interface.normalize)
                 feature_weights = {}
                 for feature in normalized_mads:
                     feature_weights[feature] = round(1/normalized_mads[feature], 2)
@@ -314,8 +314,12 @@ class DicePyTorch(ExplainerBase):
             for i, v in enumerate(self.encoded_continuous_feature_indexes):
                 org_cont = (cf[v]*(self.cont_maxx[i] - self.cont_minx[i])) + self.cont_minx[i] # continuous feature in orginal scale
                 org_cont = round(org_cont, self.cont_precisions[i]) # rounding off
-                normalized_cont = (org_cont - self.cont_minx[i])/(self.cont_maxx[i] - self.cont_minx[i])
-                cf[v] = normalized_cont # assign the projected continuous value
+
+                if self.data_interface.normalize:
+                    normalized_cont = (org_cont - self.cont_minx[i])/(self.cont_maxx[i] - self.cont_minx[i])
+                    cf[v] = normalized_cont # assign the projected continuous value
+                else:
+                    cf['v'] = org_cont
 
             for v in self.encoded_categorical_feature_indexes:
                 maxs = np.argwhere(

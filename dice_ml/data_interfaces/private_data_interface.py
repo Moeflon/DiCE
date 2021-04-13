@@ -18,6 +18,7 @@ class PrivateData:
 
         :param features: Dictionary or OrderedDict with feature names as keys and range in int/float (for continuous features) or categories in string (for categorical features) as values. For python version <=3.6, should provide only an OrderedDict.
         :param outcome_name: Outcome feature name.
+        :param normalize: if False, do not normalize continuous features
         :param type_and_precision (optional): Dictionary with continuous feature names as keys. If the feature is of type int, just string 'int' should be provided, if the feature is of type float, a list of type and precision should be provided. For instance, type_and_precision: {cont_f1: 'int', cont_f2: ['float', 2]} for continuous features cont_f1 and cont_f2 of type int and float (and precision up to 2 decimal places) respectively. Default value is None and all features are treated as int.
         :param mad (optional): Dictionary with feature names as keys and corresponding Median Absolute Deviations (MAD) as values. Default MAD value is 1 for all features.
         :param data_name (optional): Dataset name
@@ -41,6 +42,11 @@ class PrivateData:
             self.type_and_precision = params['type_and_precision']
         else:
             self.type_and_precision = {}
+
+        if 'normalize' in params:
+            self.normalize = params['normalize']
+        else:
+            self.normalize = True
 
         self.continuous_feature_names = []
         self.permitted_range = {}
@@ -98,10 +104,12 @@ class PrivateData:
     def normalize_data(self, df, encoding='one-hot'):
         """Normalizes continuous features to make them fall in the range [0,1]."""
         result = df.copy()
-        for feature_name in self.continuous_feature_names:
-            max_value = self.permitted_range[feature_name][1]
-            min_value = self.permitted_range[feature_name][0]
-            result[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
+
+        if self.normalize:
+            for feature_name in self.continuous_feature_names:
+                max_value = self.permitted_range[feature_name][1]
+                min_value = self.permitted_range[feature_name][0]
+                result[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
 
         # if encoding == 'label': # need not do this if not required
         #     for ix in self.categorical_feature_indexes:
@@ -113,7 +121,7 @@ class PrivateData:
 
     def de_normalize_data(self, df):
         """De-normalizes continuous features from [0,1] range to original range."""
-        if len(df) == 0:
+        if len(df) == 0 or not self.normalize:
             return df
         result = df.copy()
         for feature_name in self.continuous_feature_names:
