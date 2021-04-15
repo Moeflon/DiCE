@@ -38,6 +38,9 @@ class PrivateData:
         else:
             raise ValueError("should provide the name of outcome feature")
 
+        if 'continuous_features' not in params:
+            raise ValueError("should provide list of continuous features")
+            
         if 'type_and_precision' in params:
             self.type_and_precision = params['type_and_precision']
         else:
@@ -54,7 +57,7 @@ class PrivateData:
         self.categorical_levels = {}
 
         for feature in features_dict:
-            if type(features_dict[feature][0]) is int:  # continuous feature
+            if type(features_dict[feature][0]) is int and feature in params['continuous_features']:  # continuous feature
                 self.continuous_feature_names.append(feature)
                 self.permitted_range[feature] = features_dict[feature]
             else:
