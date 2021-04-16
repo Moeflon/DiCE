@@ -114,7 +114,7 @@ class DicePyTorch(ExplainerBase):
 
     def get_model_output(self, input_instance):
         """get output probability of ML model"""
-        return self.model.get_output(input_instance)[(self.num_output_nodes-1):]
+        return self.model.get_output(input_instance)[(self.num_output_nodes-1):].cpu()
 
     def predict_fn(self, input_instance):
         """prediction function"""
@@ -216,7 +216,7 @@ class DicePyTorch(ExplainerBase):
             elif self.yloss_type == "hinge_loss":
                 temp_logits = torch.log((abs(self.get_model_output(self.cfs[i]) - 0.000001))/(1 - abs(self.get_model_output(self.cfs[i]) - 0.000001)))
                 criterion = torch.nn.ReLU()
-                all_ones = torch.ones_like(self.target_cf_class).to(temp_logits.device)
+                all_ones = torch.ones_like(self.target_cf_class)
                 labels = 2 * self.target_cf_class - all_ones
                 temp_loss = all_ones - torch.mul(labels, temp_logits)
                 temp_loss = torch.norm(criterion(temp_loss))
