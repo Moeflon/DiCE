@@ -201,7 +201,7 @@ class PrivateData:
         """Gets all data related params for DiCE."""
 
         self.create_ohe_params()
-        minx, maxx = self.get_minx_maxx(normalized=True)
+        minx, maxx = self.get_minx_maxx(normalized=self.normalize)
 
         # get the column indexes of categorical and continuous features after one-hot-encoding
         encoded_categorical_feature_indexes = self.get_encoded_categorical_feature_indexes()
@@ -209,7 +209,7 @@ class PrivateData:
         encoded_continuous_feature_indexes = [ix for ix in range(len(minx[0])) if ix not in flattened_indexes]
 
         # min and max for continuous features in original scale
-        org_minx, org_maxx = self.get_minx_maxx(normalized=False)
+        org_minx, org_maxx = self.get_minx_maxx(normalized=self.normalize)
         cont_minx = list(org_minx[0][encoded_continuous_feature_indexes])
         cont_maxx = list(org_maxx[0][encoded_continuous_feature_indexes])
 
