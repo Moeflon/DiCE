@@ -209,7 +209,7 @@ class PrivateData:
         encoded_continuous_feature_indexes = [ix for ix in range(len(minx[0])) if ix not in flattened_indexes]
 
         # min and max for continuous features in original scale
-        org_minx, org_maxx = self.get_minx_maxx(normalized=self.normalize)
+        org_minx, org_maxx = self.get_minx_maxx(normalized=False)
         cont_minx = list(org_minx[0][encoded_continuous_feature_indexes])
         cont_maxx = list(org_maxx[0][encoded_continuous_feature_indexes])
 
