@@ -184,7 +184,7 @@ class PrivateData:
             for feature_name in self.categorical_feature_names:
                 for category in sorted(self.categorical_levels[feature_name]):
                     self.ohe_encoded_feature_names.append(
-                        feature_name+'_'+category)
+                        feature_name+'_'+str(category))
         else:
             # one-hot-encoded data is same as original data if there is no categorical features.
             self.ohe_encoded_feature_names = [feat for feat in self.feature_names]
