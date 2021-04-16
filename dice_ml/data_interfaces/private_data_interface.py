@@ -181,7 +181,7 @@ class PrivateData:
             return mads
 
     def create_ohe_params(self):
-        if len(self.categorical_feature_names) > 0:
+        if len(self.categorical_feature_names) > 0 and self.one_hot:
             # simulating sklearn's one-hot-encoding
             # continuous features on the left
             self.ohe_encoded_feature_names = [
