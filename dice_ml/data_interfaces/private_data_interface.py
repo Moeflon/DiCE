@@ -22,7 +22,7 @@ class PrivateData:
         :param type_and_precision (optional): Dictionary with continuous feature names as keys. If the feature is of type int, just string 'int' should be provided, if the feature is of type float, a list of type and precision should be provided. For instance, type_and_precision: {cont_f1: 'int', cont_f2: ['float', 2]} for continuous features cont_f1 and cont_f2 of type int and float (and precision up to 2 decimal places) respectively. Default value is None and all features are treated as int.
         :param mad (optional): Dictionary with feature names as keys and corresponding Median Absolute Deviations (MAD) as values. Default MAD value is 1 for all features.
         :param data_name (optional): Dataset name
-
+        :param one_hot (optional): If False, do not one-hot encode
         """
 
         if sys.version_info > (3,6,0) and type(params['features']) in [dict, collections.OrderedDict]:
@@ -37,7 +37,12 @@ class PrivateData:
             self.outcome_name = params['outcome_name']
         else:
             raise ValueError("should provide the name of outcome feature")
-
+        
+        if 'one_hot' in params:
+            self.one_hot = params['one_hot']
+        else:
+            self.one_hot = True
+            
         if 'continuous_features' not in params:
             raise ValueError("should provide list of continuous features")
             
@@ -279,7 +284,7 @@ class PrivateData:
             return data
 
         index = [i for i in range(0, len(data))]
-        if encoding == 'one-hot':
+        if self.one_hot:
             if isinstance(data, pd.DataFrame):
                 return self.from_dummies(data)
             elif isinstance(data, np.ndarray):
@@ -289,7 +294,7 @@ class PrivateData:
             else:
                 raise ValueError("data should be a pandas dataframe or a numpy array")
 
-        elif encoding == 'label':
+        else:
             data = pd.DataFrame(data=data, index=index,
                                 columns=self.feature_names)
             return data
@@ -342,10 +347,11 @@ class PrivateData:
 
     def get_ohe_min_max_normalized_data(self, query_instance):
         """Transforms query_instance into one-hot-encoded and min-max normalized data. query_instance should be a dict, a dataframe, a list, or a list of dicts"""
-        query_instance = self.prepare_query_instance(query_instance)
-        temp = self.ohe_base_df.append(query_instance, ignore_index=True, sort=False)
-        temp = self.one_hot_encode_data(temp)
-        temp = temp.tail(query_instance.shape[0]).reset_index(drop=True)
+        temp = query_instance = self.prepare_query_instance(query_instance)
+        if self.one_hot:
+            temp = self.ohe_base_df.append(query_instance, ignore_index=True, sort=False)
+            temp = self.one_hot_encode_data(temp)
+            temp = temp.tail(query_instance.shape[0]).reset_index(drop=True)
         return self.normalize_data(temp) # returns a pandas dataframe
 
     def get_inverse_ohe_min_max_normalized_data(self, transformed_data):
