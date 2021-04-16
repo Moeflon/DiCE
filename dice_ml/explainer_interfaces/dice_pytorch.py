@@ -137,7 +137,7 @@ class DicePyTorch(ExplainerBase):
             self.total_random_inits = total_CFs
             self.total_CFs = 1          # size of counterfactual set
         else:
-            self.total_random_inits = 0
+            self.total_rando_inits = 0
             self.total_CFs = total_CFs  # size of counterfactual set
 
         # freeze those columns that need to be fixed
@@ -216,7 +216,7 @@ class DicePyTorch(ExplainerBase):
             elif self.yloss_type == "hinge_loss":
                 temp_logits = torch.log((abs(self.get_model_output(self.cfs[i]) - 0.000001))/(1 - abs(self.get_model_output(self.cfs[i]) - 0.000001)))
                 criterion = torch.nn.ReLU()
-                all_ones = torch.ones_like(self.target_cf_class)
+                all_ones = torch.ones_like(self.target_cf_class).to(temp_logits.device)
                 labels = 2 * self.target_cf_class - all_ones
                 temp_loss = all_ones - torch.mul(labels, temp_logits)
                 temp_loss = torch.norm(criterion(temp_loss))
