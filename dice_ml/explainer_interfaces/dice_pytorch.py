@@ -120,7 +120,7 @@ class DicePyTorch(ExplainerBase):
         """prediction function"""
         if not torch.is_tensor(input_instance):
             input_instance = torch.tensor(input_instance).float()
-        return self.get_model_output(input_instance).data.numpy()
+        return self.get_model_output(input_instance).data.cpu().numpy()
 
     def predict_fn_for_sparsity(self, input_instance):
         """prediction function for sparsity correction"""
@@ -310,7 +310,7 @@ class DicePyTorch(ExplainerBase):
         """function for intermediate projection of CFs."""
         temp_cfs = []
         for index, tcf in enumerate(self.cfs):
-            cf = tcf.detach().clone().numpy()
+            cf = tcf.detach().clone().cpu().numpy()
             for i, v in enumerate(self.encoded_continuous_feature_indexes):
                 org_cont = (cf[v]*(self.cont_maxx[i] - self.cont_minx[i])) + self.cont_minx[i] # continuous feature in orginal scale
                 org_cont = round(org_cont, self.cont_precisions[i]) # rounding off
@@ -492,7 +492,7 @@ class DicePyTorch(ExplainerBase):
 
             # storing final CFs
             for j in range(0, self.total_CFs):
-                temp = self.cfs[j].detach().clone().numpy()
+                temp = self.cfs[j].detach().clone().cpu().numpy()
                 self.final_cfs.append(temp)
 
             # max iterations at which GD stopped
