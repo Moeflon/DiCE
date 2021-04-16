@@ -62,7 +62,7 @@ class PrivateData:
         self.categorical_levels = {}
 
         for feature in features_dict:
-            if type(features_dict[feature][0]) is int and feature in params['continuous_features']:  # continuous feature
+            if feature in params['continuous_features']:  # continuous feature
                 self.continuous_feature_names.append(feature)
                 self.permitted_range[feature] = features_dict[feature]
             else:
