@@ -451,7 +451,7 @@ class DicePyTorch(ExplainerBase):
 
                 # get loss and backpropogate
                 loss_value = self.compute_loss()
-                self.loss.backward()
+                self.loss.backward(retain_graph=True)
 
                 # freeze features other than feat_to_vary_idxs
                 for ix in range(self.total_CFs):
