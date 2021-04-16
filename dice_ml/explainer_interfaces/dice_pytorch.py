@@ -137,7 +137,7 @@ class DicePyTorch(ExplainerBase):
             self.total_random_inits = total_CFs
             self.total_CFs = 1          # size of counterfactual set
         else:
-            self.total_rando_inits = 0
+            self.total_random_inits = 0
             self.total_CFs = total_CFs  # size of counterfactual set
 
         # freeze those columns that need to be fixed
