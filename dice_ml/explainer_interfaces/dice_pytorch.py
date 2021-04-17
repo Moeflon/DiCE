@@ -114,13 +114,13 @@ class DicePyTorch(ExplainerBase):
 
     def get_model_output(self, input_instance):
         """get output probability of ML model"""
-        return self.model.get_output(input_instance)[(self.num_output_nodes-1):].cpu()
+        return self.model.get_output(input_instance)[(self.num_output_nodes-1):]
 
     def predict_fn(self, input_instance):
         """prediction function"""
         if not torch.is_tensor(input_instance):
             input_instance = torch.tensor(input_instance).float()
-        return self.get_model_output(input_instance).data.cpu().numpy()
+        return self.get_model_output(input_instance).data
 
     def predict_fn_for_sparsity(self, input_instance):
         """prediction function for sparsity correction"""
