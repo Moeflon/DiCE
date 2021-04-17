@@ -120,7 +120,7 @@ class DicePyTorch(ExplainerBase):
         """prediction function"""
         if not torch.is_tensor(input_instance):
             input_instance = torch.tensor(input_instance).float()
-        return self.get_model_output(input_instance).data
+        return self.get_model_output(input_instance).data.cpu().numpy()
 
     def predict_fn_for_sparsity(self, input_instance):
         """prediction function for sparsity correction"""
@@ -218,7 +218,7 @@ class DicePyTorch(ExplainerBase):
                 criterion = torch.nn.ReLU()
                 all_ones = torch.ones_like(self.target_cf_class)
                 labels = 2 * self.target_cf_class - all_ones
-                temp_loss = all_ones - torch.mul(labels, temp_logits)
+                temp_loss = all_ones.to(temp_logits.device) - torch.mul(labels.to(temp_logits.device), temp_logits)
                 temp_loss = torch.norm(criterion(temp_loss))
 
             yloss += temp_loss
@@ -444,14 +444,20 @@ class DicePyTorch(ExplainerBase):
             prev_loss = 0.0
 
             while self.stop_loop(iterations, loss_diff) is False:
-
+                if verbose:
+                    if (iterations) % 50 == 0:
+                        with torch.no_grad():
+                            mean_pred = sum([self.get_model_output(self.cfs[i]) for i in range(self.total_CFs)])/self.total_CFs
+                            
+                        print('step %d,  mean_pred=%g' % (iterations+1, mean_pred))
+                        
                 # zero all existing gradients
                 self.optimizer.zero_grad()
                 self.model.model.zero_grad()
 
                 # get loss and backpropogate
                 loss_value = self.compute_loss()
-                self.loss.backward(retain_graph=True)
+                self.loss.backward()
 
                 # freeze features other than feat_to_vary_idxs
                 for ix in range(self.total_CFs):
@@ -461,7 +467,11 @@ class DicePyTorch(ExplainerBase):
 
                 # update the variables
                 self.optimizer.step()
-
+                
+                # Detach cfs
+                for ix in range(self.total_CFs):
+                    self.cfs[ix].detach_()
+                    
                 # projection step
                 for ix in range(self.total_CFs):
                     for jx in range(len(self.minx[0])):
