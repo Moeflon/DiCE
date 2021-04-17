@@ -208,7 +208,8 @@ class DicePyTorch(ExplainerBase):
         yloss = 0.0
         for i in range(self.total_CFs):
             if self.yloss_type == "l2_loss":
-                temp_loss = torch.pow((self.get_model_output(self.cfs[i]) - self.target_cf_class), 2)[0]
+                out = self.get_model_output(self.cfs[i])
+                temp_loss = torch.pow((out - self.target_cf_class.to(out.device)), 2)[0]
             elif self.yloss_type == "log_loss":
                 temp_logits = torch.log((abs(self.get_model_output(self.cfs[i]) - 0.000001))/(1 - abs(self.get_model_output(self.cfs[i]) - 0.000001)))
                 criterion = torch.nn.BCEWithLogitsLoss()
@@ -220,7 +221,7 @@ class DicePyTorch(ExplainerBase):
                 labels = 2 * self.target_cf_class - all_ones
                 temp_loss = all_ones.to(temp_logits.device) - torch.mul(labels.to(temp_logits.device), temp_logits)
                 temp_loss = torch.norm(criterion(temp_loss))
-
+                
             yloss += temp_loss
 
         return yloss/self.total_CFs
@@ -290,7 +291,7 @@ class DicePyTorch(ExplainerBase):
         self.proximity_loss = self.compute_proximity_loss() if self.proximity_weight > 0 else 0.0
         self.diversity_loss = self.compute_diversity_loss() if self.diversity_weight > 0 else 0.0
         self.regularization_loss = self.compute_regularization_loss()
-
+        
         self.loss = self.yloss + (self.proximity_weight * self.proximity_loss) - (self.diversity_weight * self.diversity_loss) + (self.categorical_penalty * self.regularization_loss)
         return self.loss
 
@@ -461,17 +462,15 @@ class DicePyTorch(ExplainerBase):
 
                 # freeze features other than feat_to_vary_idxs
                 for ix in range(self.total_CFs):
+                    #print(self.cfs[ix].grad)
+
                     for jx in range(len(self.minx[0])):
                         if jx not in self.feat_to_vary_idxs:
                             self.cfs[ix].grad[jx] = 0.0
 
                 # update the variables
                 self.optimizer.step()
-                
-                # Detach cfs
-                for ix in range(self.total_CFs):
-                    self.cfs[ix].detach_()
-                    
+    
                 # projection step
                 for ix in range(self.total_CFs):
                     for jx in range(len(self.minx[0])):
