@@ -118,9 +118,10 @@ class DicePyTorch(ExplainerBase):
 
     def predict_fn(self, input_instance):
         """prediction function"""
-        if not torch.is_tensor(input_instance):
-            input_instance = torch.tensor(input_instance).float()
-        return self.get_model_output(input_instance).data.cpu().numpy()
+        with torch.no_grad():
+            if not torch.is_tensor(input_instance):
+                input_instance = torch.tensor(input_instance).float()
+            return self.get_model_output(input_instance).data.cpu().numpy()
 
     def predict_fn_for_sparsity(self, input_instance):
         """prediction function for sparsity correction"""
@@ -196,13 +197,17 @@ class DicePyTorch(ExplainerBase):
         """Initializes gradient-based PyTorch optimizers."""
         opt_library = optimizer.split(':')[0]
         opt_method = optimizer.split(':')[1]
-
+        
+        
         # optimizater initialization
         if opt_method == "adam":
             self.optimizer = torch.optim.Adam(self.cfs, lr=learning_rate)
         elif opt_method == "rmsprop":
             self.optimizer = torch.optim.RMSprop(self.cfs, lr=learning_rate)
+        
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, threshold=0.001, verbose=True, patience=50, min_lr=1e-6)
 
+            
     def compute_yloss(self):
         """Computes the first part (y-loss) of the loss function."""
         yloss = 0.0
@@ -320,11 +325,12 @@ class DicePyTorch(ExplainerBase):
                     normalized_cont = (org_cont - self.cont_minx[i])/(self.cont_maxx[i] - self.cont_minx[i])
                     cf[v] = normalized_cont # assign the projected continuous value
                 else:
-                    cf['v'] = org_cont
-
+                    cf[v] = org_cont
+            #print('---')
             for v in self.encoded_categorical_feature_indexes:
                 maxs = np.argwhere(
-                    cf[v[0]:v[-1]+1] == np.amax(cf[v[0]:v[-1]+1])).flatten().tolist()
+                    cf[v[0]:v[-1]+1] >= 0.9 * np.amax(cf[v[0]:v[-1]+1])).flatten().tolist()
+                
                 if(len(maxs) > 1):
                     if self.tie_random:
                         ix = random.choice(maxs)
@@ -332,12 +338,13 @@ class DicePyTorch(ExplainerBase):
                         ix = maxs[0]
                 else:
                     ix = maxs[0]
+                
                 for vi in range(len(v)):
                     if vi == ix:
                         cf[v[vi]] = 1.0
                     else:
                         cf[v[vi]] = 0.0
-
+            #print('---')
             temp_cfs.append(cf)
             if assign:
                 for jx in range(len(cf)):
@@ -461,17 +468,27 @@ class DicePyTorch(ExplainerBase):
                 self.loss.backward()
 
                 # freeze features other than feat_to_vary_idxs
+                #print('---')
                 for ix in range(self.total_CFs):
                     #print(self.cfs[ix].grad)
+                    for v in self.encoded_categorical_feature_indexes:
+                        pass
+                        #print(self.cfs[ix].grad[v[0]:v[-1]+1])
 
                     for jx in range(len(self.minx[0])):
                         if jx not in self.feat_to_vary_idxs:
+                            print('zero')
                             self.cfs[ix].grad[jx] = 0.0
-
+                #print('---')
+                
                 # update the variables
                 self.optimizer.step()
-    
+                
                 # projection step
+                vs = []
+                for v in self.encoded_categorical_feature_indexes:
+                    vs += v
+                
                 for ix in range(self.total_CFs):
                     for jx in range(len(self.minx[0])):
                         self.cfs[ix].data[jx] = torch.clamp(self.cfs[ix][jx], min=self.minx[0][jx], max=self.maxx[0][jx])
@@ -479,8 +496,10 @@ class DicePyTorch(ExplainerBase):
                 if verbose:
                     if (iterations) % 50 == 0:
                         print('step %d,  loss=%g' % (iterations+1, loss_value))
-
-                loss_diff = abs(loss_value-prev_loss)
+                
+                #self.scheduler.step(loss_value)
+                
+                loss_diff = abs(loss_value-prev_loss).cpu().item()
                 prev_loss = loss_value
                 iterations += 1
 

@@ -261,9 +261,11 @@ class PrivateData:
         out = data.copy()
         for l in self.categorical_feature_names:
             cols, labs = [[c.replace(
-                x, "") for c in data.columns if l+prefix_sep in c] for x in ["", l+prefix_sep]]
+                x, "") for c in data.columns if c.startswith(l+prefix_sep)] for x in ["", l+prefix_sep]]
+            
             out[l] = pd.Categorical(
                 np.array(labs)[np.argmax(data[cols].values, axis=1)])
+            
             out.drop(cols, axis=1, inplace=True)
         return out
 
