@@ -51,6 +51,11 @@ class PrivateData:
         else:
             self.type_and_precision = {}
 
+        if 'quantiles' in params:
+            self.quantiles = params['quantiles']
+        else:
+            self.quantiles = {}
+            
         if 'normalize' in params:
             self.normalize = params['normalize']
         else:
@@ -109,6 +114,11 @@ class PrivateData:
         """One-hot-encodes the data."""
         return pd.get_dummies(data, drop_first=False, columns=self.categorical_feature_names)
 
+    
+    def get_quantiles_from_training_data(self, quantile=0.05, normalized=False):
+        """Computes required quantile of Absolute Deviations of features."""
+        return self.quantiles
+    
     def normalize_data(self, df, encoding='one-hot'):
         """Normalizes continuous features to make them fall in the range [0,1]."""
         result = df.copy()
@@ -351,6 +361,7 @@ class PrivateData:
         """Transforms query_instance into one-hot-encoded and min-max normalized data. query_instance should be a dict, a dataframe, a list, or a list of dicts"""
         temp = query_instance = self.prepare_query_instance(query_instance)
         if self.one_hot:
+            query_instance[self.categorical_feature_names] = query_instance[self.categorical_feature_names].astype(int)
             temp = self.ohe_base_df.append(query_instance, ignore_index=True, sort=False)
             temp = self.one_hot_encode_data(temp)
             temp = temp.tail(query_instance.shape[0]).reset_index(drop=True)

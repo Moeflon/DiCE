@@ -125,7 +125,11 @@ class DicePyTorch(ExplainerBase):
 
     def predict_fn_for_sparsity(self, input_instance):
         """prediction function for sparsity correction"""
+        #print(input_instance)
+        #print(input_instance.shape)
+        #print(self.data_interface.get_ohe_min_max_normalized_data(input_instance))
         input_instance = self.data_interface.get_ohe_min_max_normalized_data(input_instance).iloc[0].values
+        #print(input_instance.shape)
         return self.predict_fn(torch.tensor(input_instance).float())
 
     def do_cf_initializations(self, total_CFs, algorithm, features_to_vary):
@@ -173,7 +177,7 @@ class DicePyTorch(ExplainerBase):
                 feature_weights = {}
                 for feature in normalized_mads:
                     feature_weights[feature] = round(1/normalized_mads[feature], 2)
-
+                
             feature_weights_list = []
             for feature in self.data_interface.ohe_encoded_feature_names:
                 if feature in feature_weights:
@@ -562,8 +566,8 @@ class DicePyTorch(ExplainerBase):
         test_instance_df = self.data_interface.get_inverse_ohe_min_max_normalized_data(query_instance)
         test_instance_df[self.data_interface.outcome_name] = np.array(np.round(test_pred, 3))
 
-        # post-hoc operation on continuous features to enhance sparsity - only for public data
-        if posthoc_sparsity_param != None and posthoc_sparsity_param > 0 and 'data_df' in self.data_interface.__dict__:
+        # post-hoc operation on continuous features to enhance sparsity
+        if posthoc_sparsity_param != None and posthoc_sparsity_param > 0:# and 'data_df' in self.data_interface.__dict__:
             final_cfs_df_sparse = final_cfs_df.copy()
             final_cfs_df_sparse = self.do_posthoc_sparsity_enhancement(final_cfs_df_sparse, test_instance_df, posthoc_sparsity_param, posthoc_sparsity_algorithm)
         else:
